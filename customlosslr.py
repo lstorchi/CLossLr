@@ -51,14 +51,68 @@ def residual_sum_square(y_pred, y_true):
 
 class custom_loss_lr:
 
-    def __init__(self, loss):
+    def __init__(self, loss, met='BFGS', maxiter=1000):
+
         self.__loss__ = loss
+        self.__met__ = met
+        self.__maxiter__ = maxiter
+
+        self.__beta_hat__ = None
+        self.__results__ = None
+
 
     def fit(self, X, y):
-       
-       def objective_function(beta, X, Y):
+
+        if type(X) is not np.ndarray:
+            X = np.array(X)
+        if type(y) is not np.ndarray:
+            y = np.array(y)
+
+        if len(y.shape) != 1:
+            raise Exception("y must be a 1D numpy array.")
         
-        error = self.__loss__ (np.matmul(X, beta), Y)
+        if len(X.shape) != 2:
+            raise Exception("X must be a 2D numpy array.")
         
-        return(error) 
+        if X.shape[0] != y.shape[0]:
+            raise Exception("X and y must have the same number of observations.")
        
+        def objective_function(beta, X, Y):
+           error = self.__loss__ (np.matmul(X, beta), Y)
+           return(error) 
+       
+        Xn = np.concatenate((np.ones((X.shape[0],1)), X), axis=1)
+        beta_init = np.array([1]*Xn.shape[1])
+        self.__results__ = minimize(objective_function, 
+                    beta_init, args=(Xn,y), method=self.__met__, \
+                    options={'maxiter': self.__maxiter__})
+        self.__beta_hat__ = self.__results__.x
+        
+        optlf = self.__loss__(np.matmul(Xn, self.__beta_hat__), y)
+
+        return optlf
+    
+
+    def predict(self, X):
+
+        if type(X) is not np.ndarray:
+            X = np.array(X)
+
+        if self.__beta_hat__ is None:
+            raise Exception("Model not trained yet. Call fit method first.")
+        
+        if X.shape[1] != self.__beta_hat__.shape[0]-1:
+            raise Exception("Number of features in X does not match the number of features in the model.")
+
+        Xn = np.concatenate((np.ones((X.shape[0],1)), X), axis=1)
+        
+        return np.matmul(Xn, self.__beta_hat__)  
+
+    def get_beta(self):
+        return self.__beta_hat__    
+
+    def get_intecept(self):
+        return self.__beta_hat__[0]
+
+    def get_coefficients(self):
+        return self.__beta_hat__[1:] 
