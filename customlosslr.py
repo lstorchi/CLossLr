@@ -115,4 +115,6 @@ class custom_loss_lr:
         return self.__beta_hat__[0]
 
     def get_coefficients(self):
-        return self.__beta_hat__[1:] 
+        return self.__beta_hat__[1:]
+
+######################################################################################## 
