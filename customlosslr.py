@@ -1,4 +1,5 @@
 from scipy.optimize import minimize
+from sklearn.model_selection import KFold
 import numpy as np
 
 ########################################################################################
@@ -48,17 +49,29 @@ def residual_sum_square(y_pred, y_true):
     return np.sum((y_true - y_pred)**2)
 
 ########################################################################################
-
+ 
 class custom_loss_lr:
 
-    def __init__(self, loss, normalize=False, \
+    def __init__(self, loss, normalize=False, xmean=None, xstd=None, \
                   l2regular=0.0, met='BFGS', maxiter=1000):
 
         self.__loss__ = loss
         self.__met__ = met
         self.__maxiter__ = maxiter
         self.__l2regular__ = l2regular
+
+        # if normalize is True, the model will normalize the features
+        # before fitting the model, and in precition time, it will
+        # normalize the features using the same mean and standard deviation
+        # used in the training set.of not specified the mean and standard
         self.__normalize__ = normalize
+        self.__mean__ = None  
+        self.__std__ = None
+        if self.__normalize__:
+            if xmean is not None:
+                self.__mean__ = xmean
+            if xstd is not None:
+                self.__std__ = xstd
 
         self.__beta_hat__ = None
         self.__results__ = None
@@ -82,7 +95,12 @@ class custom_loss_lr:
             raise Exception("X and y must have the same number of observations.")
         
         if self.__normalize__:
-            X = (X - np.mean(X, axis=0)) / np.std(X, axis=0)
+            if self.__mean__ is not None:
+                self.__mean__ = np.mean(X, axis=0)
+            if self.__std__ is not None:
+                self.__std__ = np.std(X, axis=0)
+
+            X = (X - self.__mean__) / self.__std__
        
         def objective_function(beta, X, Y):
            error = self.__loss__ (np.matmul(X, beta), Y) + \
@@ -114,7 +132,7 @@ class custom_loss_lr:
             raise Exception("Number of features in X does not match the number of features in the model.")
         
         if self.__normalize__:
-            X = (X - np.mean(X, axis=0)) / np.std(X, axis=0)
+            X = (X - self.__mean__) / self.__std__
 
         Xn = np.concatenate((np.ones((X.shape[0],1)), X), axis=1)
         
@@ -133,3 +151,60 @@ class custom_loss_lr:
         return self.__beta_hat__[1:]
 
 ######################################################################################## 
+
+def optimal_regularization(X, Y, lambdas, lossfunction, numfolds=10, \
+                           normalize=False, met='BFGS', maxiter=1000 ):
+    
+    if type(X) is not np.ndarray:
+        X = np.array(X)
+    
+    if type(Y) is not np.ndarray:
+        Y = np.array(Y)
+
+    if len(Y.shape) != 1:
+        raise Exception("Y must be a 1D numpy array.")
+    
+    if len(X.shape) != 2:
+        raise Exception("X must be a 2D numpy array.")
+    
+    if X.shape[0] != Y.shape[0]:
+        raise Exception("X and Y must have the same number of observations.")
+
+    if len(lambdas) == 0:
+        raise Exception("Lambda must be a list of values.")
+
+    if numfolds < 2:
+        raise Exception("Number of folds must be at least 2.")                           
+
+    for l in lambdas:
+        if l < 0:
+            raise Exception("Lambda must be a positive value.")
+    
+        kf = KFold(n_splits=numfolds, shuffle=True)
+        kf.get_n_splits(X)
+            
+        k_fold_scores = []
+            
+        f = 1
+        for train_index, test_index in kf.split(X):
+            CV_X = X[train_index,:]
+            CV_Y = Y[train_index]
+                
+            holdout_X = X[test_index,:]
+            holdout_Y = Y[test_index]
+                
+            lambda_fold_model = custom_loss_lr(\
+                loss=lossfunction, \
+                normalize=normalize, \
+                l2regular=l, \
+                met=met, \
+                maxiter=maxiter)
+            lambda_fold_model.fit(CV_X, CV_Y)
+
+            fold_preds = lambda_fold_model.predict(holdout_X)
+            fold_mape = mean_absolute_percentage_error(
+                    holdout_Y, fold_preds)
+            k_fold_scores.append(fold_mape)
+            f += 1
+
+########################################################################################
