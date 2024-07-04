@@ -51,11 +51,14 @@ def residual_sum_square(y_pred, y_true):
 
 class custom_loss_lr:
 
-    def __init__(self, loss, met='BFGS', maxiter=1000):
+    def __init__(self, loss, normalize=False, \
+                  l2regular=0.0, met='BFGS', maxiter=1000):
 
         self.__loss__ = loss
         self.__met__ = met
         self.__maxiter__ = maxiter
+        self.__l2regular__ = l2regular
+        self.__normalize__ = normalize
 
         self.__beta_hat__ = None
         self.__results__ = None
@@ -65,6 +68,7 @@ class custom_loss_lr:
 
         if type(X) is not np.ndarray:
             X = np.array(X)
+
         if type(y) is not np.ndarray:
             y = np.array(y)
 
@@ -76,9 +80,14 @@ class custom_loss_lr:
         
         if X.shape[0] != y.shape[0]:
             raise Exception("X and y must have the same number of observations.")
+        
+        if self.__normalize__:
+            X = (X - np.mean(X, axis=0)) / np.std(X, axis=0)
        
         def objective_function(beta, X, Y):
-           error = self.__loss__ (np.matmul(X, beta), Y)
+           error = self.__loss__ (np.matmul(X, beta), Y) + \
+            self.__l2regular__ * np.sum(beta**2)
+
            return(error) 
        
         Xn = np.concatenate((np.ones((X.shape[0],1)), X), axis=1)
@@ -103,16 +112,22 @@ class custom_loss_lr:
         
         if X.shape[1] != self.__beta_hat__.shape[0]-1:
             raise Exception("Number of features in X does not match the number of features in the model.")
+        
+        if self.__normalize__:
+            X = (X - np.mean(X, axis=0)) / np.std(X, axis=0)
 
         Xn = np.concatenate((np.ones((X.shape[0],1)), X), axis=1)
         
         return np.matmul(Xn, self.__beta_hat__)  
 
+
     def get_beta(self):
         return self.__beta_hat__    
 
+
     def get_intecept(self):
         return self.__beta_hat__[0]
+
 
     def get_coefficients(self):
         return self.__beta_hat__[1:]
