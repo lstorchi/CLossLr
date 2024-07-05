@@ -95,9 +95,9 @@ class custom_loss_lr:
             raise Exception("X and y must have the same number of observations.")
         
         if self.__normalize__:
-            if self.__mean__ is not None:
+            if self.__mean__ is None:
                 self.__mean__ = np.mean(X, axis=0)
-            if self.__std__ is not None:
+            if self.__std__ is None:
                 self.__std__ = np.std(X, axis=0)
 
             X = (X - self.__mean__) / self.__std__
@@ -152,8 +152,8 @@ class custom_loss_lr:
 
 ######################################################################################## 
 
-def optimal_regularization(X, Y, lambdas, lossfunction, numfolds=10, \
-                           normalize=False, met='BFGS', maxiter=1000 ):
+def get_optimal_regularization_lambda(X, Y, lambdas, lossfunction, numfolds=10, \
+                           normalize=False, met='BFGS', maxiter=1000, debug=False):
     
     if type(X) is not np.ndarray:
         X = np.array(X)
@@ -175,7 +175,8 @@ def optimal_regularization(X, Y, lambdas, lossfunction, numfolds=10, \
 
     if numfolds < 2:
         raise Exception("Number of folds must be at least 2.")                           
-
+    
+    cv_scores = []
     for l in lambdas:
         if l < 0:
             raise Exception("Lambda must be a positive value.")
@@ -202,9 +203,18 @@ def optimal_regularization(X, Y, lambdas, lossfunction, numfolds=10, \
             lambda_fold_model.fit(CV_X, CV_Y)
 
             fold_preds = lambda_fold_model.predict(holdout_X)
-            fold_mape = mean_absolute_percentage_error(
-                    holdout_Y, fold_preds)
-            k_fold_scores.append(fold_mape)
+            fold_score = lossfunction(holdout_Y, fold_preds)
+            k_fold_scores.append(fold_score)
             f += 1
+
+
+        if debug:
+            print("Lambda: %14.5e Fold: %4d Score %14.5e"%(l, f-1,  fold_score))
+        lambda_scores = np.mean(k_fold_scores)
+        cv_scores.append(lambda_scores)
+
+    best_lambda = lambdas[np.argmin(cv_scores)]
+    
+    return best_lambda
 
 ########################################################################################
