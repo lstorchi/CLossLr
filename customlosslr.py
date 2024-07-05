@@ -187,6 +187,8 @@ def get_optimal_regularization_lambda(X, Y, lambdas, lossfunction, numfolds=10, 
         k_fold_scores = []
             
         f = 1
+        if debug:
+            print("Lambda: %14.5e"%(l))
         for train_index, test_index in kf.split(X):
             CV_X = X[train_index,:]
             CV_Y = Y[train_index]
@@ -205,12 +207,16 @@ def get_optimal_regularization_lambda(X, Y, lambdas, lossfunction, numfolds=10, 
             fold_preds = lambda_fold_model.predict(holdout_X)
             fold_score = lossfunction(holdout_Y, fold_preds)
             k_fold_scores.append(fold_score)
+            if debug:
+                print("  Fold %4d Score %14.5e"%(f, fold_score))
             f += 1
 
 
-        if debug:
-            print("Lambda: %14.5e Fold: %4d Score %14.5e"%(l, f-1,  fold_score))
+   
         lambda_scores = np.mean(k_fold_scores)
+        if debug:
+            print("Lambda: %14.5e Score %14.5e"%(l, lambda_scores))
+            print()
         cv_scores.append(lambda_scores)
 
     best_lambda = lambdas[np.argmin(cv_scores)]
