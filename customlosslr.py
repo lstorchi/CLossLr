@@ -143,7 +143,7 @@ class custom_loss_lr:
         return self.__beta_hat__    
 
 
-    def get_intecept(self):
+    def get_intercept(self):
         return self.__beta_hat__[0]
 
 
