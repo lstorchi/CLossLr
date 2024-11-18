@@ -82,7 +82,7 @@ class custom_loss_lr:
 
 
     def set_l2regular(self, l2regular):
-        self.__l2regular__ = l2regular``
+        self.__l2regular__ = l2regular
 
 
     def fit(self, X, y, beta_init_values=None):
