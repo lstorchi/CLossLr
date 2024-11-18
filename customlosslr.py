@@ -77,7 +77,15 @@ class custom_loss_lr:
         self.__results__ = None
 
 
-    def fit(self, X, y):
+    def set_maxiter(self, maxiter):
+        self.__maxiter__ = maxiter  
+
+
+    def set_l2regular(self, l2regular):
+        self.__l2regular__ = l2regular``
+
+
+    def fit(self, X, y, beta_init_values=None):
 
         if type(X) is not np.ndarray:
             X = np.array(X)
@@ -109,7 +117,14 @@ class custom_loss_lr:
            return(error) 
        
         Xn = np.concatenate((np.ones((X.shape[0],1)), X), axis=1)
-        beta_init = np.array([1]*Xn.shape[1])
+        if beta_init_values is not None:
+            beta_init = beta_init_values
+        else:
+            beta_init = np.array([1]*Xn.shape[1])
+
+        if beta_init.shape[0] != Xn.shape[1]:
+            raise Exception("Number of features in X does not match the number of features in beta_init.")
+        
         self.__results__ = minimize(objective_function, 
                     beta_init, args=(Xn,y), method=self.__met__, \
                     options={'maxiter': self.__maxiter__})
