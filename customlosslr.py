@@ -129,8 +129,9 @@ class custom_loss_lr:
                     options={'maxiter': self.__maxiter__})
         self.__beta_hat__ = self.__results__.x
 
-        if self.__results__.success is False:
-            raise Exception("Optimization did not converge. Try increasing maxiter.")
+        if checkconvergence:
+            if self.__results__.success is False:
+                raise Exception("Optimization did not converge. Try increasing maxiter.")
         
         if checkconvergence:
             for idx, v in enumerate(self.__beta_hat__):
