@@ -157,9 +157,9 @@ class custom_loss_lr:
         if avgdiff < 1e-9:
             msg = "Optimization problem." + \
                 "Average difference between initial and final values is too small." \
-                "Try different initial values." \
+                "Try different solver or initial values." \
                 " [%14.5e]"%(avgdiff)   
-            raise Exception("Optimization problem. Try different initial values.")                
+            raise Exception(msg)
 
         return optlf
     
