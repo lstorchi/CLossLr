@@ -53,7 +53,8 @@ def residual_sum_square(y_pred, y_true):
 class custom_loss_lr:
 
     def __init__(self, loss, normalize=False, xmean=None, xstd=None, \
-                  l2regular=0.0, met='Nelder-Mead', maxiter=10000):
+                  l2regular=0.0, met='Nelder-Mead', maxiter=10000, \
+                    supress_warnings=True):
         
         #method = 'Nelder-Mead' seems better in convergence
         #method = 'BFGS'
@@ -61,6 +62,7 @@ class custom_loss_lr:
         self.__met__ = met
         self.__maxiter__ = maxiter
         self.__l2regular__ = l2regular
+        self.__supress_warnings__ = supress_warnings
 
         # if normalize is True, the model will normalize the features
         # before fitting the model, and in precition time, it will
@@ -80,7 +82,15 @@ class custom_loss_lr:
 
 
     def set_maxiter(self, maxiter):
-        self.__maxiter__ = maxiter  
+        self.__maxiter__ = maxiter 
+
+
+    def set_supress_warnings(self, supress_warnings):
+        self.__supress_warnings__ = supress_warnings
+
+    
+    def set_solver(self, met): 
+        self.__met__ = met
 
 
     def set_l2regular(self, l2regular):
@@ -138,12 +148,13 @@ class custom_loss_lr:
             alldiffs.append(abs(v-startv))
         avgdiff = np.mean(alldiffs)
 
-        if self.__results__.success is False:
-           msg = "Optimization did not converge. Try increasing maxiter." + \
-               self.__results__.message
-           raise Warning(msg)
+        if not self.__supress_warnings__:
+            if self.__results__.success is False:
+                msg = "Optimization did not converge. Try increasing maxiter." + \
+                    self.__results__.message
+                raise Warning(msg)
         
-        if avgdiff < 1e-10:
+        if avgdiff < 1e-9:
             msg = "Optimization problem." + \
                 "Average difference between initial and final values is too small." \
                 "Try different initial values." \
