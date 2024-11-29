@@ -117,10 +117,9 @@ class custom_loss_lr:
            return(error) 
        
         Xn = np.concatenate((np.ones((X.shape[0],1)), X), axis=1)
+        beta_init = np.array([1]*Xn.shape[1])
         if beta_init_values is not None:
             beta_init = beta_init_values
-        else:
-            beta_init = np.array([1]*Xn.shape[1])
 
         if beta_init.shape[0] != Xn.shape[1]:
             raise Exception("Number of features in X does not match the number of features in beta_init.")
@@ -129,6 +128,14 @@ class custom_loss_lr:
                     beta_init, args=(Xn,y), method=self.__met__, \
                     options={'maxiter': self.__maxiter__})
         self.__beta_hat__ = self.__results__.x
+
+        if self.__results__.success is False:
+            raise Exception("Optimization did not converge. Try increasing maxiter.")
+        
+        for idx, v in enumerate(self.__beta_hat__):
+            startv = beta_init[idx]
+            if abs(v-startv) < 1e-7:
+                raise Exception("Optimization did not converge. Try increasing maxiter.")
         
         optlf = self.__loss__(np.matmul(Xn, self.__beta_hat__), y)
 
