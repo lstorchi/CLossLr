@@ -53,7 +53,7 @@ def residual_sum_square(y_pred, y_true):
 class custom_loss_lr:
 
     def __init__(self, loss, normalize=False, xmean=None, xstd=None, \
-                  l2regular=0.0, met='Nelder-Mead', maxiter=10000, \
+                  l2regular=0.0, met='BFGS', maxiter=10000, \
                     supress_warnings=True):
         
         #method = 'Nelder-Mead' seems better in convergence
