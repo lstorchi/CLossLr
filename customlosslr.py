@@ -53,8 +53,10 @@ def residual_sum_square(y_pred, y_true):
 class custom_loss_lr:
 
     def __init__(self, loss, normalize=False, xmean=None, xstd=None, \
-                  l2regular=0.0, met='BFGS', maxiter=1000):
-
+                  l2regular=0.0, met='Nelder-Mead', maxiter=10000):
+        
+        #method = 'Nelder-Mead' seems better in convergence
+        #method = 'BFGS'
         self.__loss__ = loss
         self.__met__ = met
         self.__maxiter__ = maxiter
@@ -85,7 +87,7 @@ class custom_loss_lr:
         self.__l2regular__ = l2regular
 
 
-    def fit(self, X, y, beta_init_values=None, checkconvergence=True):
+    def fit(self, X, y, beta_init_values=None):
 
         if type(X) is not np.ndarray:
             X = np.array(X)
@@ -128,18 +130,25 @@ class custom_loss_lr:
                     beta_init, args=(Xn,y), method=self.__met__, \
                     options={'maxiter': self.__maxiter__})
         self.__beta_hat__ = self.__results__.x
-
-        if checkconvergence:
-            if self.__results__.success is False:
-                raise Exception("Optimization did not converge. Try increasing maxiter.")
-        
-        if checkconvergence:
-            for idx, v in enumerate(self.__beta_hat__):
-                startv = beta_init[idx]
-                if abs(v-startv) < 1e-7:
-                    raise Exception("Optimization problem. Try different initial values.")                
-        
         optlf = self.__loss__(np.matmul(Xn, self.__beta_hat__), y)
+
+        alldiffs = []
+        for idx, v in enumerate(self.__beta_hat__):
+            startv = beta_init[idx]
+            alldiffs.append(abs(v-startv))
+        avgdiff = np.mean(alldiffs)
+
+        if self.__results__.success is False:
+           msg = "Optimization did not converge. Try increasing maxiter." + \
+               self.__results__.message
+           raise Warning(msg)
+        
+        if avgdiff < 1e-10:
+            msg = "Optimization problem." + \
+                "Average difference between initial and final values is too small." \
+                "Try different initial values." \
+                " [%14.5e]"%(avgdiff)   
+            raise Exception("Optimization problem. Try different initial values.")                
 
         return optlf
     
