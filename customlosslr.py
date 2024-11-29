@@ -135,7 +135,7 @@ class custom_loss_lr:
         for idx, v in enumerate(self.__beta_hat__):
             startv = beta_init[idx]
             if abs(v-startv) < 1e-7:
-                raise Exception("Optimization did not converge. Try increasing maxiter.")
+                raise Exception("Optimization problem. Try different initial values.")                
         
         optlf = self.__loss__(np.matmul(Xn, self.__beta_hat__), y)
 
