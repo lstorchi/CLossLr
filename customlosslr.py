@@ -135,9 +135,13 @@ class custom_loss_lr:
 
         if beta_init.shape[0] != Xn.shape[1]:
             raise Exception("Number of features in X does not match the number of features in beta_init.")
-        
+
+        beta_init_d = np.array(beta_init, dtype=np.float64)
+        Xn_d = np.array(Xn, dtype=np.float64)
+        y_d = np.array(y, dtype=np.float64)
+
         self.__results__ = minimize(objective_function, 
-                    beta_init, args=(Xn,y), method=self.__met__, \
+                    beta_init_d, args=(Xn_d,y_d), method=self.__met__, \
                     options={'maxiter': self.__maxiter__})
         self.__beta_hat__ = self.__results__.x
         optlf = self.__loss__(np.matmul(Xn, self.__beta_hat__), y)
