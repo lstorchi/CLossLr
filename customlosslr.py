@@ -156,16 +156,20 @@ class custom_loss_lr:
             if self.__results__.success is False:
                 msg = "Optimization did not converge. Try increasing maxiter." + \
                     self.__results__.message
-                raise Warning(msg)
+                raise Ellipsis(msg)
         
         if avgdiff < 1e-9:
             msg = "Optimization problem." + \
                 "Average difference between initial and final values is too small." \
                 "Try different solver or initial values." \
                 " [%14.5e]"%(avgdiff)   
-            raise Exception(msg)
+            raise Warning(msg)
 
         return optlf
+    
+
+    def set_beta_no_fit(self, beta):
+        self.__beta_hat__ = beta
     
 
     def predict(self, X):
