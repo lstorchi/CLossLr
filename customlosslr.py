@@ -54,7 +54,7 @@ class custom_loss_lr:
 
     def __init__(self, loss, normalize=False, xmean=None, xstd=None, \
                   l2regular=0.0, met='BFGS', maxiter=10000, \
-                    supress_warnings=True):
+                    supress_warnings=False):
         
         #method = 'Nelder-Mead' seems better in convergence
         #method = 'BFGS'
@@ -156,7 +156,7 @@ class custom_loss_lr:
             if self.__results__.success is False:
                 msg = "Optimization did not converge. Try increasing maxiter." + \
                     self.__results__.message
-                raise Ellipsis(msg)
+                raise Exception(msg)
         
         if avgdiff < 1e-9:
             msg = "Optimization problem." + \
