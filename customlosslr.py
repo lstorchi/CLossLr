@@ -152,18 +152,18 @@ class custom_loss_lr:
             alldiffs.append(abs(v-startv))
         avgdiff = np.mean(alldiffs)
 
+        if self.__results__.success is False:
+            msg = "Optimization did not converge. Try increasing maxiter." + \
+                self.__results__.message
+            raise Exception(msg)
+            
         if not self.__supress_warnings__:
-            if self.__results__.success is False:
-                msg = "Optimization did not converge. Try increasing maxiter." + \
-                    self.__results__.message
-                raise Exception(msg)
-        
-        if avgdiff < 1e-9:
-            msg = "Optimization problem." + \
-                "Average difference between initial and final values is too small." \
-                "Try different solver or initial values." \
-                " [%14.5e]"%(avgdiff)   
-            raise Warning(msg)
+            if avgdiff < 1e-9:
+                msg = "Optimization problem." + \
+                    "Average difference between initial and final values is too small." \
+                    "Try different solver or initial values." \
+                    " [%14.5e]"%(avgdiff)   
+                raise Warning(msg)
 
         return optlf
     
@@ -263,8 +263,6 @@ def get_optimal_regularization_lambda(X, Y, lambdas, lossfunction, numfolds=10, 
                 print("  Fold %4d Score %14.5e"%(f, fold_score))
             f += 1
 
-
-   
         lambda_scores = np.mean(k_fold_scores)
         if debug:
             print("Lambda: %14.5e Score %14.5e"%(l, lambda_scores))
