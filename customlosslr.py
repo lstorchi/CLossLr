@@ -54,7 +54,7 @@ class custom_loss_lr:
 
     def __init__(self, loss, normalize=False, xmean=None, xstd=None, \
                   l2regular=0.0, met='BFGS', maxiter=10000, \
-                    supress_warnings=False):
+                    supress_warnings=False, jumpconvcheck=False):
         
         #method = 'Nelder-Mead' seems better in convergence
         #method = 'BFGS'
@@ -63,6 +63,7 @@ class custom_loss_lr:
         self.__maxiter__ = maxiter
         self.__l2regular__ = l2regular
         self.__supress_warnings__ = supress_warnings
+        self.__jump_convcheck__ = jumpconvcheck
 
         # if normalize is True, the model will normalize the features
         # before fitting the model, and in precition time, it will
@@ -152,10 +153,11 @@ class custom_loss_lr:
             alldiffs.append(abs(v-startv))
         avgdiff = np.mean(alldiffs)
 
-        if self.__results__.success is False:
-            msg = "Optimization did not converge. Try increasing maxiter." + \
-                self.__results__.message
-            raise Exception(msg)
+        if self.__jump_convcheck__:
+            if self.__results__.success is False:
+                msg = "Optimization did not converge. Try increasing maxiter." + \
+                    self.__results__.message
+                raise Exception(msg)
             
         if not self.__supress_warnings__:
             if avgdiff < 1e-9:
