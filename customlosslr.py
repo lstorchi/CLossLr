@@ -153,7 +153,7 @@ class custom_loss_lr:
             alldiffs.append(abs(v-startv))
         avgdiff = np.mean(alldiffs)
 
-        if self.__jump_convcheck__:
+        if not self.__jump_convcheck__:
             if self.__results__.success is False:
                 msg = "Optimization did not converge. Try increasing maxiter." + \
                     self.__results__.message
