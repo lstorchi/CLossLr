@@ -54,7 +54,8 @@ class custom_loss_lr:
 
     def __init__(self, loss, normalize=False, xmean=None, xstd=None, \
                   l2regular=0.0, met='BFGS', maxiter=10000, \
-                    supress_warnings=False, jumpconvcheck=False):
+                    supress_warnings=False, jumpconvcheck=False, \
+                    fit_intercept=True): 
         
         #method = 'Nelder-Mead' seems better in convergence
         #method = 'BFGS'
@@ -64,6 +65,7 @@ class custom_loss_lr:
         self.__l2regular__ = l2regular
         self.__supress_warnings__ = supress_warnings
         self.__jump_convcheck__ = jumpconvcheck
+        self.__fit_intercept__ = fit_intercept 
 
         # if normalize is True, the model will normalize the features
         # before fitting the model, and in precition time, it will
@@ -97,7 +99,6 @@ class custom_loss_lr:
     def set_l2regular(self, l2regular):
         self.__l2regular__ = l2regular
 
-
     def fit(self, X, y, beta_init_values=None):
 
         if type(X) is not np.ndarray:
@@ -129,13 +130,21 @@ class custom_loss_lr:
 
            return(error) 
        
-        Xn = np.concatenate((np.ones((X.shape[0],1)), X), axis=1)
+        if self.__fit_intercept__:
+            Xn = np.concatenate((np.ones((X.shape[0],1)), X), axis=1)
+        else:
+            Xn = X
+
         beta_init = np.array([1]*Xn.shape[1])
         if beta_init_values is not None:
             beta_init = beta_init_values
 
         if beta_init.shape[0] != Xn.shape[1]:
-            raise Exception("Number of features in X does not match the number of features in beta_init.")
+            if self.__fit_intercept__:
+                exp_shape = X.shape[1] + 1
+            else:
+                exp_shape = X.shape[1]
+            raise Exception("Number of features in beta_init (%d) does not match X (%d)." % (beta_init.shape[0], exp_shape))
 
         beta_init_d = np.array(beta_init, dtype=np.float64)
         Xn_d = np.array(Xn, dtype=np.float64)
@@ -173,7 +182,6 @@ class custom_loss_lr:
     def set_beta_no_fit(self, beta):
         self.__beta_hat__ = beta
     
-
     def predict(self, X):
 
         if type(X) is not np.ndarray:
@@ -182,32 +190,51 @@ class custom_loss_lr:
         if self.__beta_hat__ is None:
             raise Exception("Model not trained yet. Call fit method first.")
         
-        if X.shape[1] != self.__beta_hat__.shape[0]-1:
-            raise Exception("Number of features in X does not match the number of features in the model.")
+        expected_features = 0
+        if self.__fit_intercept__:
+            expected_features = self.__beta_hat__.shape[0] - 1
+        else:
+            expected_features = self.__beta_hat__.shape[0]
+
+        if X.shape[1] != expected_features:
+            raise Exception("Number of features in X (%d) does not match the number of features in the model (%d)." % (X.shape[1], expected_features))
         
         if self.__normalize__:
             X = (X - self.__mean__) / self.__std__
 
-        Xn = np.concatenate((np.ones((X.shape[0],1)), X), axis=1)
+        if self.__fit_intercept__:
+            Xn = np.concatenate((np.ones((X.shape[0],1)), X), axis=1)
+        else:
+            Xn = X
         
         return np.matmul(Xn, self.__beta_hat__)  
 
-
+    
     def get_beta(self):
         return self.__beta_hat__    
 
-
     def get_intercept(self):
-        return self.__beta_hat__[0]
-
+        if self.__fit_intercept__:
+            if self.__beta_hat__ is None:
+                return None
+            return self.__beta_hat__[0]
+        else:
+            return 0.0
 
     def get_coefficients(self):
-        return self.__beta_hat__[1:]
+        if self.__beta_hat__ is None:
+            return None
+        
+        if self.__fit_intercept__:
+            return self.__beta_hat__[1:]
+        else:
+            return self.__beta_hat__
 
 ######################################################################################## 
 
 def get_optimal_regularization_lambda(X, Y, lambdas, lossfunction, numfolds=10, \
-                           normalize=False, met='BFGS', maxiter=1000, debug=False):
+                           normalize=False, met='BFGS', maxiter=1000, debug=False, \
+                           fit_intercept=True): 
     
     if type(X) is not np.ndarray:
         X = np.array(X)
@@ -255,7 +282,8 @@ def get_optimal_regularization_lambda(X, Y, lambdas, lossfunction, numfolds=10, 
                 normalize=normalize, \
                 l2regular=l, \
                 met=met, \
-                maxiter=maxiter)
+                maxiter=maxiter, \
+                fit_intercept=fit_intercept) # <--- PASS PARAMETER
             lambda_fold_model.fit(CV_X, CV_Y)
 
             fold_preds = lambda_fold_model.predict(holdout_X)
