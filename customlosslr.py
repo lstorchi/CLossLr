@@ -9,14 +9,17 @@ def mean_absolute_percentage_error(y_pred, y_true):
     y_true = np.array(y_true)
     y_pred = np.array(y_pred)
     assert len(y_true) == len(y_pred)
-    
+
+    epsilon = 0.0    
     if np.any(y_true==0):
-        print("Found zeroes in y_true. MAPE undefined. Removing from set...")
-        idx = np.where(y_true==0)
-        y_true = np.delete(y_true, idx)
-        y_pred = np.delete(y_pred, idx)
-        
-    return(np.mean(np.abs((y_true - y_pred) / y_true)) * 100)
+        #print("Found zeroes in y_true. MAPE undefined. Removing from set...")
+        #idx = np.where(y_true==0)
+        #y_true = np.delete(y_true, idx)
+        #y_pred = np.delete(y_pred, idx)
+        print("Found zeroes in y_true. MAPE undefined. Using modified MAPE...") 
+        epsilon = 1e-8 
+
+    return np.mean(np.abs((y_true - y_pred) / (y_true + epsilon))) * 100
 
 ########################################################################################
 
@@ -55,7 +58,8 @@ class custom_loss_lr:
     def __init__(self, loss, normalize=False, xmean=None, xstd=None, \
                   l2regular=0.0, met='BFGS', maxiter=10000, \
                     supress_warnings=False, jumpconvcheck=False, \
-                    fit_intercept=True): 
+                    fit_intercept=True, usedifferential=False,
+                    bounds=None): 
         
         #method = 'Nelder-Mead' seems better in convergence
         #method = 'BFGS'
@@ -66,6 +70,12 @@ class custom_loss_lr:
         self.__supress_warnings__ = supress_warnings
         self.__jump_convcheck__ = jumpconvcheck
         self.__fit_intercept__ = fit_intercept 
+
+        self.__usedifferential__ = usedifferential
+        if bounds is None:
+            self.__bounds__ = [-100, 100]
+        else:
+            self.__bounds__ = bounds
 
         # if normalize is True, the model will normalize the features
         # before fitting the model, and in precition time, it will
@@ -138,6 +148,13 @@ class custom_loss_lr:
         beta_init = np.array([1]*Xn.shape[1])
         if beta_init_values is not None:
             beta_init = beta_init_values
+        else:
+            try:
+                # This solves (X^T X)^-1 X^T y
+                beta_init = np.linalg.lstsq(Xn, y, rcond=None)[0]
+            except np.linalg.LinAlgError:
+                # Fallback if matrix is singular
+                beta_init = np.zeros(Xn.shape[1])  
 
         if beta_init.shape[0] != Xn.shape[1]:
             if self.__fit_intercept__:
@@ -149,12 +166,25 @@ class custom_loss_lr:
         beta_init_d = np.array(beta_init, dtype=np.float64)
         Xn_d = np.array(Xn, dtype=np.float64)
         y_d = np.array(y, dtype=np.float64)
-
-        self.__results__ = minimize(objective_function, 
+        
+        if self.__usedifferential__:
+            boundsmin = self.__bounds__[0]
+            boundsmax = self.__bounds__[1]
+            bounds = [(boundsmin, boundsmax) for _ in range(Xn.shape[1])]
+            self.__results__ = differential_evolution(  
+                objective_function, 
+                bounds, 
+                args=(Xn, y),
+                maxiter=self.__maxiter__ // 10 # It needs fewer iters than BFGS
+                )
+            self.__beta_hat__ = self.__results__.x
+            optlf = self.__loss__(np.matmul(Xn, self.__beta_hat__), y)
+        else:
+            self.__results__ = minimize(objective_function, 
                     beta_init_d, args=(Xn_d,y_d), method=self.__met__, \
                     options={'maxiter': self.__maxiter__})
-        self.__beta_hat__ = self.__results__.x
-        optlf = self.__loss__(np.matmul(Xn, self.__beta_hat__), y)
+            self.__beta_hat__ = self.__results__.x
+            optlf = self.__loss__(np.matmul(Xn, self.__beta_hat__), y)
 
         alldiffs = []
         for idx, v in enumerate(self.__beta_hat__):
@@ -287,7 +317,7 @@ def get_optimal_regularization_lambda(X, Y, lambdas, lossfunction, numfolds=10, 
             lambda_fold_model.fit(CV_X, CV_Y)
 
             fold_preds = lambda_fold_model.predict(holdout_X)
-            fold_score = lossfunction(holdout_Y, fold_preds)
+            fold_score = lossfunction(fold_preds, holdout_Y)
             k_fold_scores.append(fold_score)
             if debug:
                 print("  Fold %4d Score %14.5e"%(f, fold_score))
