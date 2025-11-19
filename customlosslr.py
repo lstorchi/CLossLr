@@ -1,4 +1,5 @@
 from scipy.optimize import minimize
+from scipy.optimize import differential_evolution
 from sklearn.model_selection import KFold
 import numpy as np
 
