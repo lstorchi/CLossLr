@@ -148,7 +148,7 @@ class custom_loss_lr:
 
         beta_init = np.array([1]*Xn.shape[1])
         if beta_init_values is not None:
-            beta_init = beta_init_values
+            beta_init = np.array(beta_init_values)
         else:
             try:
                 # This solves (X^T X)^-1 X^T y
