@@ -110,6 +110,7 @@ class custom_loss_lr:
     def set_l2regular(self, l2regular):
         self.__l2regular__ = l2regular
 
+
     def fit(self, X, y, beta_init_values=None):
 
         if type(X) is not np.ndarray:
@@ -148,6 +149,9 @@ class custom_loss_lr:
 
         beta_init = np.array([1]*Xn.shape[1])
         if beta_init_values is not None:
+            if type(beta_init_values) is not list and type(beta_init_values) is not np.ndarray:
+                raise Exception("beta_init_values must be a list or numpy array.")
+            
             beta_init = np.array(beta_init_values)
         else:
             try:
