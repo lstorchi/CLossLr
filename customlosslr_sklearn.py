@@ -10,9 +10,10 @@ class CustomLossRegressor(RegressorMixin, BaseEstimator):
     """
  
     def __init__(self, loss, normalize=False, xmean=None, xstd=None,
-                 l2regular=0.0, met="BFGS", maxiter=10000,
-                 supress_warnings=True, jumpconvcheck=True,
-                 fit_intercept=False, usedifferential=False, bounds=None):
+                l2regular=0.0, met="BFGS", maxiter=10000,
+                supress_warnings=True, jumpconvcheck=True,
+                fit_intercept=False, usedifferential=False,
+                bounds=None, beta_init_values=None):
         # scikit-learn needs every parameter stored unchanged, under its own name
         self.loss = loss
         self.normalize = normalize
@@ -26,8 +27,9 @@ class CustomLossRegressor(RegressorMixin, BaseEstimator):
         self.fit_intercept = fit_intercept
         self.usedifferential = usedifferential
         self.bounds = bounds
+        self.beta_init_values = beta_init_values
  
-    def fit(self, X, y, beta_init_values=None):
+    def fit(self, X, y):
         X = np.asarray(X, dtype=np.float64)
         y = np.asarray(y, dtype=np.float64)
  
@@ -49,12 +51,13 @@ class CustomLossRegressor(RegressorMixin, BaseEstimator):
             jumpconvcheck=self.jumpconvcheck,
             fit_intercept=self.fit_intercept,
             usedifferential=self.usedifferential, bounds=self.bounds,
+            beta_init_values=self.beta_init_values
         )
-        self.loss_value_ = self.model_.fit(X, y, beta_init_values)
+        self.loss_value_ = self.model_.fit(X, y)
         self.opt_result_ = self.model_.__results__
         self.success_ = bool(self.opt_result_.success)
-        self.coef_ = np.asarray(self.model_.get_coefficients())
-        self.intercept_ = self.model_.get_intercept()
+        self.coef_ = np.asarray(self.model_.get_beta())
+        self.intercept_ = self.coef_[0] if self.fit_intercept else 0.0
         self.n_features_in_ = X.shape[1]
         return self
  

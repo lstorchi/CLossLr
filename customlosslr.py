@@ -60,7 +60,7 @@ class custom_loss_lr:
                   l2regular=0.0, met='BFGS', maxiter=10000, \
                     supress_warnings=False, jumpconvcheck=False, \
                     fit_intercept=True, usedifferential=False,
-                    bounds=None): 
+                    bounds=None, beta_init_values=None): 
         
         #method = 'Nelder-Mead' seems better in convergence
         #method = 'BFGS'
@@ -93,6 +93,7 @@ class custom_loss_lr:
 
         self.__beta_hat__ = None
         self.__results__ = None
+        self.__beta_init_values__ = beta_init_values
 
 
     def set_maxiter(self, maxiter):
@@ -111,7 +112,7 @@ class custom_loss_lr:
         self.__l2regular__ = l2regular
 
 
-    def fit(self, X, y, beta_init_values=None):
+    def fit(self, X, y):
 
         if type(X) is not np.ndarray:
             X = np.array(X)
@@ -148,11 +149,11 @@ class custom_loss_lr:
             Xn = X
 
         beta_init = np.array([1]*Xn.shape[1])
-        if beta_init_values is not None:
-            if type(beta_init_values) is not list and type(beta_init_values) is not np.ndarray:
+        if self.__beta_init_values__ is not None:
+            if type(self.__beta_init_values__) is not list and type(self.__beta_init_values__) is not np.ndarray:
                 raise Exception("beta_init_values must be a list or numpy array.")
             
-            beta_init = np.array(beta_init_values)
+            beta_init = np.array(self.__beta_init_values__)
         else:
             try:
                 # This solves (X^T X)^-1 X^T y
