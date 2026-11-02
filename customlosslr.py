@@ -112,6 +112,10 @@ class custom_loss_lr:
         self.__l2regular__ = l2regular
 
 
+    def set_beta_init(self, beta_init):
+        self.__beta_init_values__ = beta_init
+
+
     def fit(self, X, y):
 
         if type(X) is not np.ndarray:
