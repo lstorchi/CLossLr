@@ -28,6 +28,14 @@ class CustomLossRegressor(RegressorMixin, BaseEstimator):
         self.usedifferential = usedifferential
         self.bounds = bounds
         self.beta_init_values = beta_init_values
+
+        self.model_ = None
+        self.loss_value_ = None
+        self.opt_result_ = None
+        self.success_ = None
+        self.coef_ = None
+        self.intercept_ = None
+        self.n_features_in_ = None
  
     def fit(self, X, y):
         X = np.asarray(X, dtype=np.float64)
@@ -60,6 +68,13 @@ class CustomLossRegressor(RegressorMixin, BaseEstimator):
         self.intercept_ = self.coef_[0] if self.fit_intercept else 0.0
         self.n_features_in_ = X.shape[1]
         return self
+
+    
+    def set_beta_init(self, beta_init):
+        self.beta_init_values = beta_init
+
+    def get_beta (self):
+        return self.model_.get_beta()
  
     def predict(self, X):
         check_is_fitted(self, "model_")
