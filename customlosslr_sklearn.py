@@ -64,8 +64,8 @@ class CustomLossRegressor(RegressorMixin, BaseEstimator):
         self.loss_value_ = self.model_.fit(X, y)
         self.opt_result_ = self.model_.__results__
         self.success_ = bool(self.opt_result_.success)
-        self.coef_ = np.asarray(self.model_.get_beta())
-        self.intercept_ = self.coef_[0] if self.fit_intercept else 0.0
+        self.coef_ = np.asarray(self.model_.get_coefficients())
+        self.intercept_ = self.model_.get_intercept()
         self.n_features_in_ = X.shape[1]
         return self
 
